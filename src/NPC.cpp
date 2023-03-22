@@ -10,21 +10,21 @@
 
 NPC::NPC()
 {
-  boxSceneNode = nullptr;
-  box = nullptr;
-  body = nullptr;
-  colShape = nullptr;
+    boxSceneNode = nullptr;
+    box = nullptr;
+    body = nullptr;
+    colShape = nullptr;
 
-  /* Note: These are hardcoded in player.  Should probably be read in from a
-  * config file or similar.
-  */
+    /* Note: These are hardcoded in player.  Should probably be read in from a
+    * config file or similar.
+    */
 
-  forwardForce = 5.0f;
-  turningForce = 100.0f;
-  jumpForce = 5.0f;
+    forwardForce = 5.0f;
+    turningForce = 100.0f;
+    jumpForce = 5.0f;
 
-  linearDamping = 0.6f;
-  angularDamping = 0.8f;
+    linearDamping = 0.6f;
+    angularDamping = 0.8f;
 }
 
 NPC::~NPC()
@@ -46,15 +46,14 @@ void NPC::setup(SceneManager* scnMgr, btDiscreteDynamicsWorld* world, float mass
 
 void NPC::createMesh(SceneManager* scnMgr)
 {
-  box = scnMgr->createEntity("cube.mesh");
+    box = scnMgr->createEntity("cube.mesh");
 }
 
 void NPC::attachToNode(SceneNode* parent)
 {
-  boxSceneNode = parent->createChildSceneNode();
-  boxSceneNode->attachObject(box);
-  boxSceneNode->setScale(1.0f,1.0f,1.0f);
-
+    boxSceneNode = parent->createChildSceneNode();
+    boxSceneNode->attachObject(box);
+    boxSceneNode->setScale(1.0f,1.0f,1.0f);
 }
 
 void NPC::setScale(float x, float y, float z)
@@ -67,26 +66,26 @@ void NPC::setScale(float x, float y, float z)
 */
 void NPC::setRotation(Vector3 axis, Radian rads)
 {
-  //quat from axis angle
-  Quaternion quat(rads, axis);
-  //boxSceneNode->setOrientation(quat);
+    //quat from axis angle
+    Quaternion quat(rads, axis);
+    //boxSceneNode->setOrientation(quat);
 
-  btTransform trans;
+    btTransform trans;
   
-  // get current transformation
-  body->getMotionState()->getWorldTransform(trans);
+    // get current transformation
+    body->getMotionState()->getWorldTransform(trans);
 
-  btQuaternion rotation = Ogre::Bullet::convert(quat);
+    btQuaternion rotation = Ogre::Bullet::convert(quat);
 
-  // replace rotation
-  trans.setRotation(rotation);
+    // replace rotation
+    trans.setRotation(rotation);
 
-  // put it back
-  body->setWorldTransform(trans);
-  body->getMotionState()->setWorldTransform(trans);
+    // put it back
+    body->setWorldTransform(trans);
+    body->getMotionState()->setWorldTransform(trans);
 
-  // sync scene node
-  syncSceneNode();
+    // sync scene node
+    syncSceneNode();
 }
 
 /* Not as simple as creating the body in the right place. This is 
@@ -115,44 +114,44 @@ void NPC::setPosition(float x, float y, float z)
 
 void NPC::createCollisionShape() 
 {
-  colShape = Ogre::Bullet::createBoxCollider(box);
+    colShape = Ogre::Bullet::createBoxCollider(box);
 }
 
 void NPC::createRigidBody(float bodyMass)
 {
-  /// Create Dynamic Objects
-  btTransform startTransform;
-  startTransform.setIdentity();
+    /// Create Dynamic Objects
+    btTransform startTransform;
+    startTransform.setIdentity();
 
-  btScalar mass(bodyMass);
+    btScalar mass(bodyMass);
 
-  //rigidbody is dynamic if and only if mass is non zero, otherwise static
-  bool isDynamic = (mass != 0.f);
+    //rigidbody is dynamic if and only if mass is non zero, otherwise static
+    bool isDynamic = (mass != 0.f);
 
-  btVector3 localInertia(0, 0, 0);
-  if (isDynamic)
-  {
-      // Debugging
-      //std::cout << "I see the cube is dynamic" << std::endl;
-      colShape->calculateLocalInertia(mass, localInertia);
-  }
+    btVector3 localInertia(0, 0, 0);
+    if (isDynamic)
+    {
+        // Debugging
+        //std::cout << "I see the cube is dynamic" << std::endl;
+        colShape->calculateLocalInertia(mass, localInertia);
+    }
 
-  //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-  btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-  btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, colShape, localInertia);
-  body = new btRigidBody(rbInfo);
+    //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+    btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+    btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, colShape, localInertia);
+    body = new btRigidBody(rbInfo);
 
-  // aid the control of this body by adding linear and angular drag!
-  // If we wanted to have different drag / damping for each dimension axis, 
-  // we need to implement this ourselves - https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=11430
-  // Constraints are probably easier!
-  body->setDamping(linearDamping,angularDamping);
+    // aid the control of this body by adding linear and angular drag!
+    // If we wanted to have different drag / damping for each dimension axis, 
+    // we need to implement this ourselves - https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=11430
+    // Constraints are probably easier!
+    body->setDamping(linearDamping,angularDamping);
 
-  // Just some testing
-  restrictAxisTest();
+    // Just some testing
+    restrictAxisTest();
 
-  //Set the user pointer to this object.
-  body->setUserPointer((void*)this);
+    //Set the user pointer to this object.
+    body->setUserPointer((void*)this);
 }
 
 void NPC::restrictAxisTest() 
@@ -189,34 +188,33 @@ void NPC::restrictAxisTest()
 
 btCollisionShape* NPC::getCollisionShape() 
 { 
-  return colShape;
+    return colShape;
 }
 
 btRigidBody* NPC::getRigidBody()
 {
-  return body;
+    return body;
 }
 
 void NPC::update()
 {
-  /* AI here */
-  arrive();
+    /* AI here */
+    arrive();
 
-  if (body && body->getMotionState())
-  {
-    syncSceneNode();
-  }
-
+    if (body && body->getMotionState())
+    {
+        syncSceneNode();
+    }
 }
 
 void NPC::syncSceneNode() 
 {
-  btTransform trans;
-  body->getMotionState()->getWorldTransform(trans);
-  btQuaternion orientation = trans.getRotation();
+    btTransform trans;
+    body->getMotionState()->getWorldTransform(trans);
+    btQuaternion orientation = trans.getRotation();
 
-  boxSceneNode->setPosition(Ogre::Vector3(trans.getOrigin().getX(), trans.getOrigin().getY(), trans.getOrigin().getZ()));
-  boxSceneNode->setOrientation(Ogre::Quaternion(orientation.getW(), orientation.getX(), orientation.getY(), orientation.getZ()));
+    boxSceneNode->setPosition(Ogre::Vector3(trans.getOrigin().getX(), trans.getOrigin().getY(), trans.getOrigin().getZ()));
+    boxSceneNode->setOrientation(Ogre::Quaternion(orientation.getW(), orientation.getX(), orientation.getY(), orientation.getZ()));
 }
 
 void NPC::forward()
@@ -415,33 +413,33 @@ void NPC::setTarget(btTransform target)
 
 void NPC::arrive()
 {
-  // Slowing radius
-  float slowingRad = 500.0f;
-  // Stopping radius
-  float stoppingRad = 105.0f; // note cube is 100 square, don't set this below 100!
+    // Slowing radius
+    float slowingRad = 500.0f;
+    // Stopping radius
+    float stoppingRad = 105.0f; // note cube is 100 square, don't set this below 100!
 
-  if(targetInRange(stoppingRad))
-  {
-    // stop the npc!
-  }
-  else 
-  {
-    if(lookWhereYouAreGoing())
+    if(targetInRange(stoppingRad))
     {
-        // point at the player and ram, could make a fun sumo game out of this!
-        forward();
-
-        // Aim to slow to a stop at the position
-        if(targetInRange(slowingRad))
+        // stop the npc!
+    }
+    else 
+    {
+        if(lookWhereYouAreGoing())
         {
-            // slow to target
+            // point at the player and ram, could make a fun sumo game out of this!
+            forward();
+
+            // Aim to slow to a stop at the position
+            if(targetInRange(slowingRad))
+            {
+                // slow to target
+            }
+        }
+        else
+        {
+
         }
     }
-    else
-    {
-
-    }
-  }  
 }
 
 bool NPC::targetInRange(float range)
@@ -496,16 +494,16 @@ bool NPC::lookWhereYouAreGoing()
     return true;
     else 
     {
-    if(crossProd.y() > 0.0f) 
-    {
-        std::cout << "Turning Right" << std::endl;
-        turnRightScaled(angle/M_PI);
-    }
-    else
-    {
-        std::cout << "Turning Left" << std::endl;
-        turnLeftScaled(angle/M_PI);
-    }
+        if(crossProd.y() > 0.0f) 
+        {
+            std::cout << "Turning Right" << std::endl;
+            turnRightScaled(angle/M_PI);
+        }
+        else
+        {
+            std::cout << "Turning Left" << std::endl;
+            turnLeftScaled(angle/M_PI);
+        }
     }
 
     return false;

@@ -5,21 +5,21 @@
 
 Player::Player()
 {
-  boxSceneNode = nullptr;
-  box = nullptr;
-  body = nullptr;
-  colShape = nullptr;
+    boxSceneNode = nullptr;
+    box = nullptr;
+    body = nullptr;
+    colShape = nullptr;
 
-  /* Note: These are hardcoded in player.  Should probably be read in from a
-  * config file or similar.
-  */
+    /* Note: These are hardcoded in player.  Should probably be read in from a
+    * config file or similar.
+    */
 
-  forwardForce = 5.0f;
-  turningForce = 50.0f;
-  jumpForce = 5.0f;
+    forwardForce = 5.0f;
+    turningForce = 50.0f;
+    jumpForce = 5.0f;
 
-  linearDamping = 0.6f;
-  angularDamping = 0.1f;
+    linearDamping = 0.6f;
+    angularDamping = 0.1f;
 }
 
 Player::~Player()
@@ -41,15 +41,14 @@ void Player::setup(SceneManager* scnMgr, btDiscreteDynamicsWorld* world, float m
 
 void Player::createMesh(SceneManager* scnMgr)
 {
-  box = scnMgr->createEntity("cube.mesh");
+    box = scnMgr->createEntity("cube.mesh");
 }
 
 void Player::attachToNode(SceneNode* parent)
 {
-  boxSceneNode = parent->createChildSceneNode();
-  boxSceneNode->attachObject(box);
-  boxSceneNode->setScale(1.0f,1.0f,1.0f);
-
+    boxSceneNode = parent->createChildSceneNode();
+    boxSceneNode->attachObject(box);
+    boxSceneNode->setScale(1.0f,1.0f,1.0f);
 }
 
 void Player::setScale(float x, float y, float z)
@@ -62,26 +61,26 @@ void Player::setScale(float x, float y, float z)
 */
 void Player::setRotation(Vector3 axis, Radian rads)
 {
-  //quat from axis angle
-  Quaternion quat(rads, axis);
-  //boxSceneNode->setOrientation(quat);
+    //quat from axis angle
+    Quaternion quat(rads, axis);
+    //boxSceneNode->setOrientation(quat);
 
-  btTransform trans;
+    btTransform trans;
   
-  // get current transformation
-  body->getMotionState()->getWorldTransform(trans);
+    // get current transformation
+    body->getMotionState()->getWorldTransform(trans);
 
-  btQuaternion rotation = Ogre::Bullet::convert(quat);
+    btQuaternion rotation = Ogre::Bullet::convert(quat);
 
-  // replace rotation
-  trans.setRotation(rotation);
+    // replace rotation
+    trans.setRotation(rotation);
 
-  // put it back
-  body->setWorldTransform(trans);
-  body->getMotionState()->setWorldTransform(trans);
+    // put it back
+    body->setWorldTransform(trans);
+    body->getMotionState()->setWorldTransform(trans);
 
-  // sync scene node
-  syncSceneNode();
+    // sync scene node
+    syncSceneNode();
 }
 
 /* Not as simple as creating the body in the right place. This is 
@@ -110,44 +109,44 @@ void Player::setPosition(float x, float y, float z)
 
 void Player::createCollisionShape() 
 {
-  colShape = Ogre::Bullet::createBoxCollider(box);
+    colShape = Ogre::Bullet::createBoxCollider(box);
 }
 
 void Player::createRigidBody(float bodyMass)
 {
-  /// Create Dynamic Objects
-  btTransform startTransform;
-  startTransform.setIdentity();
+    /// Create Dynamic Objects
+    btTransform startTransform;
+    startTransform.setIdentity();
 
-  btScalar mass(bodyMass);
+    btScalar mass(bodyMass);
 
-  //rigidbody is dynamic if and only if mass is non zero, otherwise static
-  bool isDynamic = (mass != 0.f);
+    //rigidbody is dynamic if and only if mass is non zero, otherwise static
+    bool isDynamic = (mass != 0.f);
 
-  btVector3 localInertia(0, 0, 0);
-  if (isDynamic)
-  {
-      // Debugging
-      //std::cout << "I see the cube is dynamic" << std::endl;
-      colShape->calculateLocalInertia(mass, localInertia);
-  }
+    btVector3 localInertia(0, 0, 0);
+    if (isDynamic)
+    {
+        // Debugging
+        //std::cout << "I see the cube is dynamic" << std::endl;
+        colShape->calculateLocalInertia(mass, localInertia);
+    }
 
-  //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-  btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-  btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, colShape, localInertia);
-  body = new btRigidBody(rbInfo);
+    //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+    btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+    btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, colShape, localInertia);
+    body = new btRigidBody(rbInfo);
 
-  // aid the control of this body by adding linear and angular drag!
-  // If we wanted to have different drag / damping for each dimension axis, 
-  // we need to implement this ourselves - https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=11430
-  // Constraints are probably easier!
-  body->setDamping(linearDamping,angularDamping);
+    // aid the control of this body by adding linear and angular drag!
+    // If we wanted to have different drag / damping for each dimension axis, 
+    // we need to implement this ourselves - https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=11430
+    // Constraints are probably easier!
+    body->setDamping(linearDamping,angularDamping);
 
-  // Just some testing
-  restrictAxisTest();
+    // Just some testing
+    restrictAxisTest();
 
-  //Set the user pointer to this object.
-  body->setUserPointer((void*)this);
+    //Set the user pointer to this object.
+    body->setUserPointer((void*)this);
 }
 
 void Player::restrictAxisTest() 
@@ -184,32 +183,31 @@ void Player::restrictAxisTest()
 
 btCollisionShape* Player::getCollisionShape() 
 { 
-  return colShape;
+    return colShape;
 }
 
 btRigidBody* Player::getRigidBody()
 {
-  return body;
+    return body;
 }
 
 void Player::update()
 {
-  if (body && body->getMotionState())
-  {
+    if (body && body->getMotionState())
+    {
     syncSceneNode();
 
-  }
-
+    }
 }
 
 void Player::syncSceneNode() 
 {
-  btTransform trans;
-  body->getMotionState()->getWorldTransform(trans);
-  btQuaternion orientation = trans.getRotation();
+    btTransform trans;
+    body->getMotionState()->getWorldTransform(trans);
+    btQuaternion orientation = trans.getRotation();
 
-  boxSceneNode->setPosition(Ogre::Vector3(trans.getOrigin().getX(), trans.getOrigin().getY(), trans.getOrigin().getZ()));
-  boxSceneNode->setOrientation(Ogre::Quaternion(orientation.getW(), orientation.getX(), orientation.getY(), orientation.getZ()));
+    boxSceneNode->setPosition(Ogre::Vector3(trans.getOrigin().getX(), trans.getOrigin().getY(), trans.getOrigin().getZ()));
+    boxSceneNode->setOrientation(Ogre::Quaternion(orientation.getW(), orientation.getX(), orientation.getY(), orientation.getZ()));
 }
 
 void Player::forward()
