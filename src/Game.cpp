@@ -18,13 +18,14 @@ Ogre / Bullet connectivity from here:
 
 #include "OgreBullet.h"
 
-#include "Player.h"
-#include "NPC.h"
 
 Game::Game() : ApplicationContext("OgreTutorialApp")
 {
     // Set all the Ogre stuff to nullptr - trap uninitialised pointer errors.
     scnMgr = nullptr;
+
+    // array of gameobjects
+    gameObjects;
 
     // Same for bullet
     btDefaultCollisionConfiguration *collisionConfiguration = nullptr;
@@ -39,67 +40,19 @@ Game::Game() : ApplicationContext("OgreTutorialApp")
     // npc 
     npc = nullptr;
 
-    // keys
-    aDown = dDown = wDown = fDown = jDown = false;
+    inputHelper = nullptr;
 }
 
-Game::~Game()
-{
-    // cleanup in the reverse order of creation/initialization
-
-    // remove the rigidbodies from the dynamics world and delete them
-
-    for (int i = dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--)
-    {
-        btCollisionObject *obj = dynamicsWorld->getCollisionObjectArray()[i];
-        btRigidBody *body = btRigidBody::upcast(obj);
-
-        if (body && body->getMotionState())
-        {
-            delete body->getMotionState();
-        }
-
-        dynamicsWorld->removeCollisionObject(obj);
-        delete obj;
-    }
-
-    // delete collision shapes
-    for (int j = 0; j < collisionShapes.size(); j++)
-    {
-        btCollisionShape *shape = collisionShapes[j];
-        collisionShapes[j] = 0;
-        delete shape;
-    }
-
-    // delete dynamics world
-    delete dynamicsWorld;
-    dynamicsWorld = nullptr;
-
-    // delete solver
-    delete solver;
-    solver = nullptr;
-
-    // delete broadphase
-    delete overlappingPairCache;
-    overlappingPairCache = nullptr;
-
-    // delete dispatcher
-    delete dispatcher;
-    dispatcher = nullptr;
-
-    delete collisionConfiguration;
-    collisionConfiguration = nullptr;
-
-    // next line is optional: it will be cleared by the destructor when the array goes out of scope
-    collisionShapes.clear();
-}
+Game::~Game(){}
 
 void Game::setup()
 {
     // do not forget to call the base first
     ApplicationContext::setup();
 
-    addInputListener(this);
+    inputHelper = new InputHelper();
+
+    addInputListener(inputHelper);
 
     // get a pointer to the already created root
     Root *root = getRoot();
@@ -109,7 +62,10 @@ void Game::setup()
     RTShader::ShaderGenerator *shadergen = RTShader::ShaderGenerator::getSingletonPtr();
     shadergen->addSceneManager(scnMgr);
 
+
     bulletInit();
+
+    setupPlayer();
 
     setupCamera();
 
@@ -117,32 +73,7 @@ void Game::setup()
 
     setupLights();
 
-    setupPlayer();
-
     setupNPC();
-}
-
-void Game::setupCamera()
-{
-    // Create Camera
-    Camera *cam = scnMgr->createCamera("myCam");
-
-    // Setup Camera
-    cam->setNearClipDistance(5);
-
-    // Position Camera - to do this it must be attached to a scene graph and added
-    // to the scene.
-    SceneNode *camNode = scnMgr->getRootSceneNode()->createChildSceneNode();
-    camNode->setPosition(200, 300, 600);
-    camNode->lookAt(Vector3(0, 0, 0), Node::TransformSpace::TS_WORLD);
-    camNode->attachObject(cam);
-
-    // Setup viewport for the camera.
-    Viewport *vp = getRenderWindow()->addViewport(cam);
-    vp->setBackgroundColour(ColourValue(0, 0, 0));
-
-    // link the camera and view port.
-    cam->setAspectRatio(Real(vp->getActualWidth()) / Real(vp->getActualHeight()));
 }
 
 void Game::bulletInit()
@@ -164,6 +95,31 @@ void Game::bulletInit()
     dynamicsWorld->setGravity(btVector3(0, -10, 0));
 }
 
+void Game::setupCamera()
+{
+    // Create Camera
+    Camera *cam = scnMgr->createCamera("myCam");
+
+    // Setup Camera
+    cam->setNearClipDistance(5);
+
+    // Position Camera - to do this it must be attached to a scene graph and added
+    // to the scene.
+    //SceneNode *camNode = scnMgr->getRootSceneNode()->createChildSceneNode();
+    SceneNode* camNode = player->getPlayerNode();
+    camNode->setPosition(200, 300, 600);
+    camNode->lookAt(Vector3(0, 0, 0), Node::TransformSpace::TS_WORLD);
+    camNode->attachObject(cam);
+
+    // Setup viewport for the camera.
+    Viewport *vp = getRenderWindow()->addViewport(cam);
+    vp->setBackgroundColour(ColourValue(0, 0, 0));
+
+    // link the camera and view port.
+    cam->setAspectRatio(Real(vp->getActualWidth()) / Real(vp->getActualHeight()));
+}
+
+
 /**
  * @brief Create a Player using the player class. 
  *
@@ -180,17 +136,24 @@ void Game::setupPlayer()
     // angle
     Radian rads(Degree(40.0));
 
-    player = new Player();
+    player = new GameObject();
+    // TODO: geef components mee
+    player->setGraphicsComponent(new GraphicsComponent());
+    //player->setPhysicsComponent(new PhysicsComponent());
+    player->setInputComponent(new PlayerInputComponent());
+
     player->setup(scnMgr, dynamicsWorld, mass);
     player->setRotation(axis, rads);
     player->setPosition(20.0f, 120.0f, 20.0f);
+
+    gameObjects.push_back(*player);
 
     collisionShapes.push_back(player->getCollisionShape());
     dynamicsWorld->addRigidBody(player->getRigidBody());
 }
 
 /**
- * @brief Create a NPC using the player class. 
+ * @brief Create an NPC using the player class. 
  *
  */
 void Game::setupNPC()
@@ -205,23 +168,17 @@ void Game::setupNPC()
     // angle
     Radian rads(Degree(0.0));
 
-    npc = new NPC();
+    npc = new GameObject();
     npc->setup(scnMgr, dynamicsWorld, mass);
     npc->setRotation(axis, rads);
-    npc->setPosition(-500.0f, 80.0f, 500.0f);
+    npc->setPosition(-200.0f, 80.0f, 500.0f);
 
     collisionShapes.push_back(npc->getCollisionShape());
     dynamicsWorld->addRigidBody(npc->getRigidBody());
 
     btTransform target;
     target.setOrigin(btVector3(200.0f, 80.0f, 200.0f));
-
     npc->setTarget(target);
-
-    // added second target
-    btTransform target2;
-    target2.setOrigin(btVector3(100.0f, 80.0f, 200.0f));
-    npc->setTarget(target2);
 
 }
 
@@ -292,6 +249,9 @@ void Game::setupFloor()
     dynamicsWorld->addRigidBody(body);
 }
 
+
+
+
 bool Game::frameStarted(const Ogre::FrameEvent &evt)
 {
     // Be sure to call base class - otherwise events are not polled.
@@ -299,27 +259,27 @@ bool Game::frameStarted(const Ogre::FrameEvent &evt)
 
     if (this->dynamicsWorld != NULL)
     {
+        // check if escape is pressed        
+        if (inputHelper->esc)
+        {
+            getRoot()->queueEndRendering();
+        }
+
+        // loop through game objects and handleInput()
+        for (int i = 0; i < gameObjects.size(); i++)
+        {
+            gameObjects[i].handleInput(*inputHelper);
+        }
+
         // Bullet can work with a fixed timestep
         // dynamicsWorld->stepSimulation(1.f / 60.f, 10);
 
         // Or a variable one, however, under the hood it uses a fixed timestep
         // then interpolates between them.
 
-        // Apply forces based on input. 
-        if(wDown)
-            player->forward();
+        // Apply forces based on input.
+        // update player positions
         
-        if(aDown)
-            player->turnRight();
-
-        if(dDown)
-            player->turnLeft();
-
-        if(jDown)
-            player->jump();
-
-        if(fDown)
-            player->fly();
 
         dynamicsWorld->stepSimulation((float)evt.timeSinceLastFrame, 10);
 
@@ -362,7 +322,7 @@ bool Game::frameStarted(const Ogre::FrameEvent &evt)
         // always update the npc, it has no player input to wake it back up!
         npc->setTarget(player->getRigidBody()->getWorldTransform());
 
-        npc->update();       
+        npc->update();   
     }
 
     return true;
@@ -383,9 +343,13 @@ bool Game::frameEnded(const Ogre::FrameEvent &evt)
     return true;
 }
 
+
+
+
+
 void Game::setupLights()
 {
-    // Setup Abient light
+    // Setup Ambient light
     scnMgr->setAmbientLight(ColourValue(0, 0, 0));
     scnMgr->setShadowTechnique(ShadowTechnique::SHADOWTYPE_STENCIL_MODULATIVE);
 
@@ -398,7 +362,7 @@ void Game::setupLights()
     spotLight->setType(Light::LT_SPOTLIGHT);
     spotLight->setSpotlightRange(Degree(35), Degree(50));
 
-    // Create a schene node for the spotlight
+    // Create a scene node for the spotlight
     SceneNode *spotLightNode = scnMgr->getRootSceneNode()->createChildSceneNode();
     spotLightNode->setDirection(-1, -1, 0);
     spotLightNode->setPosition(Vector3(200, 200, 0));
@@ -436,79 +400,3 @@ void Game::setupLights()
     // Add the light to the scene.
     pointLightNode->attachObject(pointLight);
 }
-
-/* Uses the OgreBites::InputListener, but can also use SDL2 */
-bool Game::keyPressed(const KeyboardEvent& evt)
-{
-    std::cout << "Got key down event" << std::endl;
-    if (evt.keysym.sym == SDLK_ESCAPE)
-    {
-        getRoot()->queueEndRendering();
-    }
-
-    if(evt.keysym.sym == 'w')
-    {
-        wDown = true;
-    }
-
-    if(evt.keysym.sym == 'a')
-    {
-        aDown = true;
-    }
-
-    if(evt.keysym.sym == 'd')
-    {
-        dDown = true;
-    }
-
-    if(evt.keysym.sym == 'j')
-    {
-        jDown = true;
-    }
-
-     if(evt.keysym.sym == 'f')
-    {
-        fDown = true;
-    }
-
-    return true;
-}
-
-bool Game::keyReleased(const KeyboardEvent& evt)
-{
-    std::cout << "Got key up event" << std::endl;
-
-    if(evt.keysym.sym == 'w')
-    {
-        wDown = false;
-    }
-
-    if(evt.keysym.sym == 'a')
-    {
-        aDown = false;
-    }
-
-    if(evt.keysym.sym == 'd')
-    {
-        dDown = false;
-    }
-
-    if(evt.keysym.sym == 'j')
-    {
-        jDown = false;
-    }
-
-     if(evt.keysym.sym == 'f')
-    {
-        fDown = false;
-    }
-
-    return true;
-}
-
-bool Game::mouseMoved(const MouseMotionEvent& evt)
-{
-	//std::cout << "Got Mouse" << std::endl;
-	return true;
-}
-
