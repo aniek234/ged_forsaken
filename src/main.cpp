@@ -24,9 +24,8 @@ int main(int argc, char *argv[])
 	}
 	catch (Ogre::Exception& e)
 	{
-
 		std::cout << "An exception has occured: " <<
-			e.getFullDescription().c_str() << std::endl;
+		e.getFullDescription().c_str() << std::endl;
 	}
 
 	return 0;

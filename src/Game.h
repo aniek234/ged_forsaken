@@ -10,117 +10,131 @@
 
 #include "../build/InputComponent.h"
 #include "../build/PlayerInputComponent.h"
+#include "../build/PhysicsComponent.h"
 
 using namespace Ogre;
 using namespace OgreBites;
 
-/** Example Games class.
-* Based (very heavily) on the Ogre3d examples.  Even uses OgreBytes (which I'd like to remove).
-* Updated comments to Doxygen format. 
-*/
+
 class Game : public ApplicationContext, public InputListener
 {
-    private:
-        /**
-        * Ogre Scene Manager.
-        */
-        SceneManager* scnMgr;
+private:
+    /**
+    * Ogre Scene Manager.
+    */
+    SceneManager* scnMgr;
 
+    /**
+    * Keep track of the game objects in the game
+    */
+    std::vector<GameObject> gameObjects;
 
-        std::vector<GameObject> gameObjects;
+    /** 
+    * The Player object
+    */
+    GameObject *player;
 
-        /** 
-         * The Player object
-         */
-        GameObject *player;
+    /**
+    * The NPC object 
+    */
+    GameObject* npc;
 
-        /**
-         * The NPC object 
-         */
-        GameObject* npc;
+    /**
+    * Input helper 
+    */
+    InputHelper* inputHelper;
 
-        /**
-         * Input helper 
-         */
-        InputHelper* inputHelper;
+    /**
+    * Keep track of the shapes, we release memory at exit.
+    * make sure to re-use collision shapes among rigid bodies whenever possible!
+    */
+    btAlignedObjectArray<btCollisionShape*> collisionShapes;
 
-        /**
-        * Keep track of the shapes, we release memory at exit.
-        * make sure to re-use collision shapes among rigid bodies whenever possible!
-        */
-        btAlignedObjectArray<btCollisionShape*> collisionShapes;
+    // Set all the Bullet stuff to nullptr - trap uninitialised pointer errors.
+    btDefaultCollisionConfiguration* collisionConfiguration = nullptr;
+    btCollisionDispatcher* dispatcher = nullptr;
+    btBroadphaseInterface* overlappingPairCache = nullptr;
+    btSequentialImpulseConstraintSolver* solver = nullptr;
+    btDiscreteDynamicsWorld* dynamicsWorld = nullptr;
 
+public:
+    /** 
+    * Creates the object, sets all pointers to nullptr.
+    */
+    Game();
 
-        // Set all the Bullet stuff to nullptr - trap uninitialised pointer errors.
-        btDefaultCollisionConfiguration* collisionConfiguration = nullptr;
-        btCollisionDispatcher* dispatcher = nullptr;
-        btBroadphaseInterface* overlappingPairCache = nullptr;
-        btSequentialImpulseConstraintSolver* solver = nullptr;
-        btDiscreteDynamicsWorld* dynamicsWorld = nullptr;
+    /**
+    * Destructor (virtual), as this is virtual that of the sub class will also be called.
+    */
+    virtual ~Game();
 
-    public:
-        /** 
-        * Creates the object, sets all pointers to nullptr.
-        */
-        Game();
+    /**
+    * Carries out all setup, includes lighting, scene objects.
+    */
+    void setup();
 
-        /**
-        * Destructor (virtual), as this is virtual that of the sub class will also be called.
-        */
-        virtual ~Game();
+    /**
+    * Sets up the camera
+    */
+    void setupCamera();
 
-        /**
-        * Carries out all setup, includes lighting, scene objects.
-        */
-        void setup();
+    /**
+    * Quick and dirty box mesh, essentially this is a mix of the Ogre code to setup a box - from example.
+    * Added to this is the setup for the bullet3 collision box and rigid body.
+    */
+    void setupBoxMesh();
 
-        /**
-        * Sets up the camera
-        */
-        void setupCamera();
+    void bulletInit();
 
-        /**
-        * Quick and dirty box mesh, essentially this is a mix of the Ogre code to setup a box - from example.
-        * Added to this is the setup for the bullet3 collision box and rigid body.
-        */
-        void setupBoxMesh();
+    /**
+    * Player setup
+    */
+    void setupPlayer();
 
-        void bulletInit();
+    /**
+    * NPC setup
+    */
+    void setupNPC(float pos_x, float pos_y, float pos_z);
 
-        /**
-        * Player setup
-        */
-        void setupPlayer();
+    /**
+    * NPC2 setup
+    */
+    void setupNPC2(float pos_x, float pos_y, float pos_z);
 
-        /**
-        * NPC setup
-        */
-        void setupNPC();
+    /**
+    * Floor setup
+    */
+    void setupFloor();
 
-        /**
-        * Floor setup
-        */
-        void setupFloor();
+    /**
+    * Ceiling setup
+    */
+    void setupCeiling();
 
-        /**
-        * Creates, lights and adds them to the scene.  All based on the sample code, needs moving out into a level class.
-        */
-        void setupLights();
+    /**
+    * Walls setup
+    */
+    void setupWall1();
+    void setupWall2();
+    void setupWall3();
+    void setupWall4();
 
+    /**
+    * Creates, lights and adds them to the scene.  All based on the sample code, needs moving out into a level class.
+    */
+    void setupLights();
 
-        /**
-        * Ogre wraps the game loop, but we've registered as being interested in FrameEvents (through inheritance).
-        * This method is called by the framework before rendering the frame.
-        * @param evt, FrameEvent.
-        */
-        bool frameStarted (const FrameEvent &evt);
+    /**
+    * Ogre wraps the game loop, but we've registered as being interested in FrameEvents (through inheritance).
+    * This method is called by the framework before rendering the frame.
+    * @param evt, FrameEvent.
+    */
+    bool frameStarted (const FrameEvent &evt);
 
-        /**
-        * Ogre wraps the game loop, but we've registered as being interested in FrameEvents (through inheritance).
-        * This method is called by the framework after rendering the frame.
-        * @param evt, FrameEvent.
-        */
-        bool frameEnded(const FrameEvent &evt);
-
-
+    /**
+    * Ogre wraps the game loop, but we've registered as being interested in FrameEvents (through inheritance).
+    * This method is called by the framework after rendering the frame.
+    * @param evt, FrameEvent.
+    */
+    bool frameEnded(const FrameEvent &evt);
 };

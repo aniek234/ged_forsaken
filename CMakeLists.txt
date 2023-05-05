@@ -20,14 +20,22 @@ find_package(Threads)
 
 set(HDRS
 	./src/Game.h
-	./src/Player.h
-	./src/NPC.h
+	./src/GameObject.h
+	./src/GraphicsComponent.h
+	./src/InputComponent.h
+	./src/InputHelper.h
+	./src/PhysicsComponent.h
+	./src/PlayerInputComponent.h
 )
 
 set(SRCS
 	./src/Game.cpp
-	./src/Player.cpp
-	./src/NPC.cpp
+	./src/GameObject.cpp
+	./src/GraphicsComponent.cpp
+	./src/InputComponent.cpp
+	./src/InputHelper.cpp
+	./src/PhysicsComponent.cpp
+	./src/PlayerInputComponent.cpp
 	./src/main.cpp
 )
 
